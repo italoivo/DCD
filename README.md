@@ -1,5 +1,5 @@
 # DCD
-dynamic community detection and parameter search code
+Dynamic community detection and parameter search code
 
 Description
 
