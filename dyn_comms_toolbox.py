@@ -361,6 +361,11 @@ def parameter_search(matrices,lower_gamma,higher_gamma,lower_omega,higher_omega,
     lower_omega : minimum value of omega to consider in the parameter search.
     higher_omega : maximum value of omega to consider in the parameter search.
     iterations : number of iterations to perform.
+    num_processors : Number of threads used to calculate the data points in 
+    each iteration, the default number is 10
+    points : Number of data points used to calculate skewnness and scalefreeness
+    between the lower and higher values of gamma and omega for each iteration, 
+    if not specified the default value of 10 is used.
     Returns
     -------
     gamma_omega_sequence : values of optimized gamma and omega for each 
@@ -451,12 +456,28 @@ def parameter_search(matrices,lower_gamma,higher_gamma,lower_omega,higher_omega,
     return gamma_omega_sequence,step_comm_sizes,step_durations
 
 def flexibility_calc(comm_structure):
+    """
+    Calculates the flexibility metric for a community structure.
+    ----------
+    comm_structure : dynamic community structure as a numpy array with shape (time,nodes).
+    Returns
+    -------
+    flexibility : Numpy array with the flexibility value for each network node.
+    """
     discontinuities = np.logical_not((comm_structure[:-1,:] - comm_structure[1:,:]) == 0)
     L,N = discontinuities.shape
     flexibility = np.sum(discontinuities,axis=0)/L
     return flexibility
 
 def disjointedness_calc(comm_structure):
+    """
+    Calculates the disjointedness metric for a community structure.
+    ----------
+    comm_structure : dynamic community structure as a numpy array with shape (time,nodes).
+    Returns
+    -------
+    disjointedness : Numpy array with the flexibility value for each network node.
+    """
     L,N = comm_structure.shape
     individual_transitions = []
     nodes_ind_transitions = np.zeros(N)
@@ -474,6 +495,15 @@ def disjointedness_calc(comm_structure):
     return disjointedness
 
 def cohesion_calc(comm_structure):
+    """
+    Calculates the cohesion matrix and cohesion strength for a community structure.
+    ----------
+    comm_structure : dynamic community structure as a numpy array with shape (time,nodes).
+    Returns
+    -------
+    cohesion_matrix : A 2-d numpy array with shape (nodes,nodes) and the pairwise cohesion for each node pair.
+    cohesion_str : A numpy array with the cohesion strength for each node of the network.
+    """
     L,N = comm_structure.shape
     cohesion_matrix = np.zeros((N,N))
     for i in range(L-1):
@@ -491,6 +521,14 @@ def cohesion_calc(comm_structure):
     return cohesion_matrix,cohesion_str
 
 def promiscuity_calc(comm_structure):
+    """
+    Calculates the promiscuity for a community structure.
+    ----------
+    comm_structure : dynamic community structure as a numpy array with shape (time,nodes).
+    Returns
+    -------
+    promiscuity : A numpy array with the promiscuity value for each node.
+    """
     L,N = comm_structure.shape
     communities = np.amax(comm_structure)
     node_communities = []
@@ -499,3 +537,52 @@ def promiscuity_calc(comm_structure):
     node_communities = np.array(node_communities)
     promiscuity = node_communities/communities
     return promiscuity
+
+def dynamical_links(comm_structure):
+    """
+    Calculates a dynamical links 3d object used to calculate the pairwise allegiance and intermittence.
+    ----------
+    comm_structure : dynamic community structure as a numpy array with shape (time,nodes).
+    Returns
+    -------
+    links_t : 3d object with shape (time,node,node) which stores the pair of nodes in the same community in each time layer.
+    """
+    time_range,nodes = community_structure.shape
+    links_t = []
+    for t in range(time_range):
+        struc_array = community_structure[t,:]
+        time_stamp = np.zeros((nodes,nodes))
+        for i in range(nodes):
+            for j in range(nodes):
+                if struc_array[i] == struc_array[j]:
+                    time_stamp[i,j] = 1
+        links_t.append(time_stamp)
+    links_t = np.array(links_t)
+    return links_t
+
+def allegiance_calc(comm_structure):
+    """
+    Calculates the pairwise allegiance of a community structure.
+    ----------
+    comm_structure : dynamic community structure as a numpy array with shape (time,nodes).
+    Returns
+    -------
+    allegiance : matrix which stores the pairwise allegiances averaged on time layers.
+    """
+    instant_allegiances = dynamical_links(comm_structure)
+    allegiance = np.mean(instant_allegiances, axis=0)
+    return allegiance
+
+def intermittence_calc(comm_structure):
+    """
+    Calculates the pairwise intermittence of a community structure.
+    ----------
+    comm_structure : dynamic community structure as a numpy array with shape (time,nodes).
+    Returns
+    -------
+    intermittence : matrix which stores the pairwise intermittence averaged on time layers.
+    """
+    instant_allegiances = dynamical_links(comm_structure)
+    alleg_differences = np.abs(matrix[1:,:,:] - matrix[:-1,:,:])
+    intermitence = np.mean(alleg_differences, axis=0)
+    return intermitence
