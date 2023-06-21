@@ -41,6 +41,11 @@ def get_rng(seed=None):
 
 def dynamic_louvain(adj_matrix, gamma=1, omega=1, ci=None, seed=None):
     """
+    This function is a modified version of the function community_louvain from
+    bctpy toolbox (https://github.com/aestrivex/bctpy/tree/master/bct).
+    The original function was modified to optimize the modularity of a 
+    multilayer network such as the generalized Louvain algorithm.
+
     Calculates the time evolving community structure using the generalized 
     Louvain algorithm (see Jutla et al. 2011), using gamma as a spatial
     resolution parameter and omega as temporal resolution parameter.
