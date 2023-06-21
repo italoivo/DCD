@@ -547,10 +547,10 @@ def dynamical_links(comm_structure):
     -------
     links_t : 3d object with shape (time,node,node) which stores the pair of nodes in the same community in each time layer.
     """
-    time_range,nodes = community_structure.shape
+    time_range,nodes = comm_structure.shape
     links_t = []
     for t in range(time_range):
-        struc_array = community_structure[t,:]
+        struc_array = comm_structure[t,:]
         time_stamp = np.zeros((nodes,nodes))
         for i in range(nodes):
             for j in range(nodes):
@@ -583,6 +583,6 @@ def intermittence_calc(comm_structure):
     intermittence : matrix which stores the pairwise intermittence averaged on time layers.
     """
     instant_allegiances = dynamical_links(comm_structure)
-    alleg_differences = np.abs(matrix[1:,:,:] - matrix[:-1,:,:])
+    alleg_differences = np.abs(instant_allegiances[1:,:,:] - instant_allegiances[:-1,:,:])
     intermitence = np.mean(alleg_differences, axis=0)
     return intermitence
